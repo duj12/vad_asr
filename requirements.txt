@@ -1,5 +1,8 @@
 numpy
 loguru
 torch
+openvino
 librosa
 modelscope
+funasr
+torchaudio

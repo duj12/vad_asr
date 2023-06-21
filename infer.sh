@@ -11,8 +11,8 @@ data_dir=$1
 output_dir=$2
 batch_size=64
 gpu_inference=true    # whether to perform gpu decoding
-gpuid_list="0,1"    # set gpus, e.g., gpuid_list="0,1"
-njob=10    # the number of jobs for CPU decoding, if gpu_inference=false, use CPU decoding, please set njob
+gpuid_list="0"    # set gpus, e.g., gpuid_list="0,1"
+njob=64    # the number of jobs for CPU decoding, if gpu_inference=false, use CPU decoding, please set njob
 checkpoint_dir=
 checkpoint_name="valid.cer_ctc.ave.pb"
 hotword_txt="hotwords.txt"

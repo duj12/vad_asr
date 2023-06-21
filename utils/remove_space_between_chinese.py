@@ -20,12 +20,12 @@ if __name__ == '__main__':
             if has_name:
                 line = line.strip().split(' ')
                 name = line[0]
-                text = ' '.join(line[1:])
+                text = ' '.join(line[1:]).lower()
                 new_text = remove_space_between_mandarin(text)
                 new_text = remove_redundant_whitespaces(new_text)
                 fout.write(name + ' ' + new_text + '\n')
             else:
-                text = line.strip()
+                text = line.strip().lower()
                 new_text = remove_space_between_mandarin(text)
                 new_text = remove_redundant_whitespaces(new_text)
                 fout.write(new_text + '\n')

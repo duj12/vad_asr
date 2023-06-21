@@ -7,13 +7,13 @@ output_wav_path=data/output
 
 # step 1. put long wavs to data/input, cut them and output in data/output
 if [ $stage -le 1 ]; then
-  find $input_wav_path -name "*.wav" > $wav_list_path
+  find $input_wav_path -name "*.wav" | sort > $wav_list_path
   if [ -d $output_wav_path ]; then
     rm -r $output_wav_path
   fi
   mkdir -p $output_wav_path
-
-  python vad_cut.py $wav_list_path $output_wav_path/wav
+  # vad_cut will delete silence segment, vad_cut4asr will keep silence segment
+  python vad_cut4asr.py $wav_list_path $output_wav_path/wav
 fi
 
 # step 2. Decoding short wavs.
