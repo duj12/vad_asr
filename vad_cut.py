@@ -1,3 +1,5 @@
+import sys
+
 import torch
 import torch.nn as nn
 import numpy as np
@@ -696,7 +698,7 @@ def connect_(pairs, n=1):
     return new_pairs
 
 
-def vad_demo():
+def vad_demo(wav_list, output_path):
     import soundfile as sf
     import os
     from loguru import logger
@@ -717,10 +719,7 @@ def vad_demo():
     #实际切分音频
     threshold = (0.5, 0.2)
     save_cutted_wav = True
-    wav_list = 'wav.list'
     ref_list = None
-    output_path="output_stream"
-    output_path = '/data/megastore/Projects/DuJing/deployment/crnn-vad0/output_stream'
 
     f_wav = open(wav_list, 'r')
     if ref_list:
@@ -731,7 +730,7 @@ def vad_demo():
 
     def process_one_thread(file_list, output_path):
         # vad_ckpt_path =  'pretrained_models/xmov/hard.pt'  #离线模型
-        vad_ckpt_path = 'pretrained_models/xmov/stream-hard.pt'  # 流式模型
+        vad_ckpt_path = 'vad/stream-hard.pt'  # 流式模型
 
         vad_model = CRNN_VAD_STREAM(vad_ckpt_path, device=DEVICE)  # each thread with one model
         for line in file_list:
@@ -792,7 +791,7 @@ def vad_demo():
                 #speech_segment += output_speech_chunk.tolist()  #只保存过滤掉静音之后的音频，会导致音频比较
                 if chunk_state!=0 :  #只要不是整段静音就拼起来
                     speech_segment += wave_chunk[vad_model.left_context: vad_model.left_context+vad_model.central_context].tolist()
-                if chunk_state == 3  or len(speech_segment) >= 15*16000: #SPEECH_END or reach 15 second
+                if chunk_state == 3 and len(speech_segment) >= 5*16000  or len(speech_segment) >= 15*16000: #SPEECH_END or reach 15 second
                     # 只要一段音频结束，就输出切分之后的wav，以便检查和分析
                     if output_path and save_cutted_wav:
                         sf.write(os.path.join(output_path, '{}_{:05d}.wav'.format(wav_name, speech_segment_num)),
@@ -848,7 +847,7 @@ def vad_demo():
     for i, line in enumerate(f_wav.readlines()):
         file_list.append(line)
 
-    th_cnt = min(1, len(file_list))
+    th_cnt = min(32, len(file_list))
 
     if th_cnt==1:
         process_one_thread(file_list, output_path)
@@ -873,4 +872,6 @@ def vad_demo():
 
 
 if __name__ == "__main__":
-    vad_demo()
+    wav_list=sys.argv[1]
+    output_path=sys.argv[2]
+    vad_demo(wav_list, output_path)

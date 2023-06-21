@@ -1,0 +1,5 @@
+numpy
+loguru
+torch
+librosa
+modelscope
