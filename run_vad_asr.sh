@@ -1,6 +1,6 @@
 #!/bin/bash
 
-stage=3
+stage=1
 input_wav_path=data/input/
 wav_list_path=data/wav.list
 output_wav_path=data/output
