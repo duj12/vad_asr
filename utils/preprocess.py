@@ -86,10 +86,10 @@ def remove_space_between_mandarin(text):
     text = text.strip().split()
     out_text = text[0]
     for i in range(1, len(text)):
-        if is_english(text[i-1][-1]):
+        if is_english(text[i-1][-1]) and is_english(text[i][0]):
             out_text += " "
-        if is_english(text[i][0]):
-            out_text += " "
+        # if is_english(text[i][0]):
+        #     out_text += " "
         out_text += text[i]
     return out_text
     

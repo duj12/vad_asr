@@ -6,13 +6,25 @@ from modelscope.utils.constant import Tasks
 
 def modelscope_infer(args):
     os.environ['CUDA_VISIBLE_DEVICES'] = str(args.gpuid)
-    inference_pipeline = pipeline(
-        task=Tasks.auto_speech_recognition,
-        model=args.model,
-        output_dir=args.output_dir,
-        batch_size=args.batch_size,
-        param_dict={"decoding_model": args.decoding_mode, "hotword": args.hotword_txt}
-    )
+    if args.add_punc:
+        inference_pipeline = pipeline(
+            task=Tasks.auto_speech_recognition,
+            model=args.model,
+            output_dir=args.output_dir,
+            batch_size=args.batch_size,
+            vad_model='damo/speech_fsmn_vad_zh-cn-16k-common-pytorch',
+            vad_model_revision="v1.1.8",
+            punc_model='damo/punc_ct-transformer_zh-cn-common-vocab272727-pytorch',
+            param_dict={"decoding_model": args.decoding_mode, "hotword": args.hotword_txt}
+        )
+    else:
+        inference_pipeline = pipeline(
+            task=Tasks.auto_speech_recognition,
+            model=args.model,
+            output_dir=args.output_dir,
+            batch_size=args.batch_size,
+            param_dict={"decoding_model": args.decoding_mode, "hotword": args.hotword_txt}
+        )
     inference_pipeline(audio_in=args.audio_in)
 
 if __name__ == "__main__":
@@ -24,5 +36,6 @@ if __name__ == "__main__":
     parser.add_argument('--hotword_txt', type=str, default=None)
     parser.add_argument('--batch_size', type=int, default=64)
     parser.add_argument('--gpuid', type=str, default="0")
+    parser.add_argument('--add_punc', type=int, default=0)
     args = parser.parse_args()
     modelscope_infer(args)

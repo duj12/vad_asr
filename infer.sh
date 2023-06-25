@@ -6,20 +6,26 @@ set -o pipefail
 
 stage=1
 stop_stage=1
+#model="damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
 model="damo/speech_paraformer-large-contextual_asr_nat-zh-cn-16k-common-vocab8404"
 data_dir=$1
 output_dir=$2
+add_punc=$3
+gpu_inference=$4   # whether to perform gpu decoding
 batch_size=64
-gpu_inference=true    # whether to perform gpu decoding
 gpuid_list="0"    # set gpus, e.g., gpuid_list="0,1"
-njob=64    # the number of jobs for CPU decoding, if gpu_inference=false, use CPU decoding, please set njob
+njob=32    # the number of jobs for CPU decoding, if gpu_inference=false, use CPU decoding, please set njob
 checkpoint_dir=
 checkpoint_name="valid.cer_ctc.ave.pb"
 hotword_txt="hotwords.txt"
+text_suffix=
+if [ $add_punc == '1' ]; then
+  text_suffix=_with_punc
+fi
 
 . utils/parse_options.sh || exit 1;
 
-if ${gpu_inference} == "true"; then
+if [ ${gpu_inference} == '1' ]; then
     nj=$(echo $gpuid_list | awk -F "," '{print NF}')
 else
     nj=$njob
@@ -56,19 +62,21 @@ if [ $stage -le 1 ] && [ $stop_stage -ge 1 ];then
             --output_dir ${output_dir}/output.$JOB \
             --batch_size ${batch_size} \
             --hotword_txt ${hotword_txt} \
+            --add_punc $add_punc  \
             --gpuid ${gpuid}
         }&
     done
     wait
 
     mkdir -p ${output_dir}/1best_recog
-    for f in token score text; do
+    for f in token score text$text_suffix; do
         if [ -f "${output_dir}/output.1/1best_recog/${f}" ]; then
           for i in $(seq "${nj}"); do
               cat "${output_dir}/output.${i}/1best_recog/${f}"
           done | sort -k1 >"${output_dir}/1best_recog/${f}"
         fi
     done
+    mv "${output_dir}/1best_recog/text$text_suffix" "${output_dir}/1best_recog/text"
 fi
 
 if [ $stage -le 2 ] && [ $stop_stage -ge 2 ];then

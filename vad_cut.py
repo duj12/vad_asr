@@ -698,15 +698,16 @@ def connect_(pairs, n=1):
     return new_pairs
 
 
-def vad_demo(wav_list, output_path):
+def vad_demo(wav_list, output_path, use_gpu):
     import soundfile as sf
     import os
     from loguru import logger
 
     SAMPLE_RATE = 16000
     DEVICE = 'cpu'  # cpu is fast enough.
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and use_gpu:
         DEVICE = 'cuda'
+        logger.info(f"use {DEVICE} to cut long audios.")
     DEVICE = torch.device(DEVICE)
 
     # #测试vad性能
@@ -874,4 +875,5 @@ def vad_demo(wav_list, output_path):
 if __name__ == "__main__":
     wav_list=sys.argv[1]
     output_path=sys.argv[2]
-    vad_demo(wav_list, output_path)
+    use_gpu = int(sys.argv[3])
+    vad_demo(wav_list, output_path, use_gpu)

@@ -10,11 +10,12 @@ from loguru import logger
 from vad import CRNN_VAD_STREAM
 
 
-def vad_process(wav_list, output_path):
+def vad_process(wav_list, output_path, use_gpu):
     sample_rate = 16000
     device = 'cpu'  # cpu is fast enough.
-    if torch.cuda.is_available():
+    if torch.cuda.is_available() and use_gpu:
         device = 'cuda'
+        logger.info(f"use {device} to cut long audios.")
 
     vad_model = CRNN_VAD_STREAM(left_frames=12,
                                 right_frames=12,
@@ -111,6 +112,7 @@ def vad_process(wav_list, output_path):
 if __name__ == "__main__":
     wav_list = sys.argv[1]
     output_path = sys.argv[2]
+    use_gpu = int(sys.argv[3])
     MAX_THREAD=32
 
     f_wav = open(wav_list, 'r')
@@ -121,7 +123,7 @@ if __name__ == "__main__":
     th_cnt = min(MAX_THREAD, len(file_list))
 
     if th_cnt==1:
-        vad_process(file_list, output_path)
+        vad_process(file_list, output_path, use_gpu)
     else:
         import threading
         total_cnt = len(file_list)
@@ -130,6 +132,6 @@ if __name__ == "__main__":
         for th in range(th_cnt):
             start_idx = th * job_per_th
             end_idx = min((th+1) * job_per_th, total_cnt)
-            threads.append(threading.Thread(target=vad_process, args=(file_list[start_idx:end_idx], output_path)))
+            threads.append(threading.Thread(target=vad_process, args=(file_list[start_idx:end_idx], output_path, use_gpu)))
         for th in range(th_cnt):
             threads[th].start()
