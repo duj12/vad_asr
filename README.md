@@ -11,7 +11,9 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 如果是windows平台，可以先点击 http://git.xmov.ai/dujing/vad-asr/-/archive/v0.0.1/vad-asr-v0.0.1.zip 下载压缩包，直接解压后进入到压缩包文件夹，键盘shift+鼠标右键，打开linux shell(需要先安装wsl(https://learn.microsoft.com/zh-cn/windows/wsl/install))
+
 ![](img.png)
+
 然后创建一个python环境，运行
 ```shell
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
