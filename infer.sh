@@ -6,15 +6,25 @@ set -o pipefail
 
 stage=1
 stop_stage=1
-#model="damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
-model="damo/speech_paraformer-large-contextual_asr_nat-zh-cn-16k-common-vocab8404"
 data_dir=$1
 output_dir=$2
 add_punc=$3
 gpu_inference=$4   # whether to perform gpu decoding
-batch_size=64
+batch_size=$5
 gpuid_list="0"    # set gpus, e.g., gpuid_list="0,1"
-njob=32    # the number of jobs for CPU decoding, if gpu_inference=false, use CPU decoding, please set njob
+njob=$5    # the number of jobs for CPU decoding, if gpu_inference=false, use CPU decoding, please set njob
+
+language=$6
+
+
+if [ ${language} == "zh" ]; then
+    model="damo/speech_paraformer-large_asr_nat-zh-cn-16k-common-vocab8404-pytorch"
+elif [ ${language} == "en" ]; then
+    model="iic/speech_paraformer_asr-en-16k-vocab4199-pytorch"
+else
+    echo "language = $language, not support yet. 中文用zh, 英文用en"
+    exit 1
+fi
 checkpoint_dir=
 checkpoint_name="valid.cer_ctc.ave.pb"
 hotword_txt="hotwords.txt"

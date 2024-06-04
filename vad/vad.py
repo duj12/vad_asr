@@ -421,10 +421,10 @@ class CRNN_VAD_STREAM(torch.nn.Module):
     def vad_judgement(
             self,
             post_label,
-            off_on_length=10,
-            on_off_length=20,
-            hang_before=10,
-            hang_over=10) -> Tuple[np.ndarray, int]:
+            off_on_length=4,
+            on_off_length=4,
+            hang_before=4,
+            hang_over=4) -> Tuple[np.ndarray, int]:
         """
         Given input wave_chunk, output the real speech in wave according to the VAD-label.
         And return the state of current chunk. The state could be the following 4 types:

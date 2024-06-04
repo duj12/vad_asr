@@ -16,7 +16,13 @@ pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 然后创建一个python环境，运行
 ```shell
+conda create -n asr python==3.9
+conda activate asr
 pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+已经创建好了环境，只激活环境即可
+```shell
+conda activate asr
 ```
 
 ### 1. 数据准备

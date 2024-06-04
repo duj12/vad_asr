@@ -17,8 +17,8 @@ def vad_process(wav_list, output_path, use_gpu):
         device = 'cuda'
         logger.info(f"use {device} to cut long audios.")
 
-    vad_model = CRNN_VAD_STREAM(left_frames=12,
-                                right_frames=12,
+    vad_model = CRNN_VAD_STREAM(left_frames=4,
+                                right_frames=4,
                                 device=device)
 
     save_cutted_wav = True
@@ -34,8 +34,8 @@ def vad_process(wav_list, output_path, use_gpu):
         wave, sr = librosa.load(f_name)
         if wave.ndim > 1:
             wave = wave.mean(-1)
-        if sr != 16000:
-            wave = librosa.resample(wave, orig_sr=sr, target_sr=16000)
+        if sr != 24000:
+            wave = librosa.resample(wave, orig_sr=sr, target_sr=24000)
 
         # clear GRU buffer at the begining of each wave processing
         vad_model.clear_gru_buffer()
@@ -55,7 +55,7 @@ def vad_process(wav_list, output_path, use_gpu):
 
         start_at = time()
 
-        # 每次传入的采样点数需为200的整数倍，这里假定每次传入0.3s采样率为16k的音频，即4800个采样点
+        # 每次传入的采样点数需为200的整数倍，这里假定每次传入0.2s采样率为24k的音频，即4800个采样点
         central_samples = 4800
         for start in range(0, wav_padded_len, central_samples):
             end = min(start + central_samples, wav_padded_len)
@@ -67,42 +67,52 @@ def vad_process(wav_list, output_path, use_gpu):
                 start = wav_padded_len  # to break the loop
 
             # 计算语音概率，当前chunk状态，语音标签，ASR断句类型
-            vad_post_chunk, chunk_state, vad_pred_chunk, asr_endpoint = \
-                vad_model.stream_asr_endpoint(wave_chunk,
-                                              max_speech_len=15,
-                                              max_trailing_silence=500,)
+            wav_16k = librosa.resample(wave_chunk, orig_sr=24000, target_sr=16000)
+            #  只有VAD推理用的是16k音频，其他都使用24k音频
+            if start != wav_padded_len :   # 不是 last chunk
+                vad_post_chunk, chunk_state, vad_pred_chunk, asr_endpoint = \
+                    vad_model.stream_asr_endpoint(wav_16k,
+                                                  max_speech_len=25,
+                                                  max_trailing_silence=150,)
 
-            # # 下面保存的音频是去除了静音/噪音的音频，只剩下应该被激活的音频
-            # if chunk_state != 0:  # 只要不是整段静音就拼起来
-            #     speech_segment += wave_chunk.tolist()
-            # if chunk_state == 3:  # SPEECH_END
-            #     # 只要一段音频结束，就输出切分之后的 wav，以便检查和分析
-            #     if output_path and save_cutted_wav:
-            #         sf.write(os.path.join(
-            #             output_path,
-            #             f"{wav_name}_active_{speech_segment_num:05d}.wav"),
-            #                  np.array(speech_segment),
-            #                  samplerate=sample_rate)
-            #     speech_segment_num += 1
-            #     speech_segment = []  # clear the segment
+                # # 下面保存的音频是去除了静音/噪音的音频，只剩下应该被激活的音频
+                # if chunk_state != 0:  # 只要不是整段静音就拼起来
+                #     speech_segment += wave_chunk.tolist()
+                # if chunk_state == 3:  # SPEECH_END
+                #     # 只要一段音频结束，就输出切分之后的 wav，以便检查和分析
+                #     if output_path and save_cutted_wav:
+                #         sf.write(os.path.join(
+                #             output_path,
+                #             f"{wav_name}_active_{speech_segment_num:05d}.wav"),
+                #                  np.array(speech_segment),
+                #                  samplerate=sample_rate)
+                #     speech_segment_num += 1
+                #     speech_segment = []  # clear the segment
 
-            # 下面演示用于ASR分句的VAD效果，保存的音频只是在流式输入的基础上根据需要断开的位置进行了断句
+                # 下面演示用于ASR分句的VAD效果，保存的音频只是在流式输入的基础上根据需要断开的位置进行了断句
+
+                if asr_endpoint > 0  and len(asr_segment) >= 10*24000: # vad检测到endpoint
+                    vad_model.reset_state()  # 需要重置，以便进行下一次的检测
+                    # 只要一段音频结束，就输出切分之后的 wav，以便检查和分析
+                    if output_path and save_cutted_wav:
+                        sf.write(os.path.join(
+                            output_path,
+                            f"{wav_name}_{asr_segment_num:05d}.wav"),
+                            np.array(asr_segment),
+                            samplerate=24000)
+                    asr_segment_num += 1
+                    asr_segment = []  # clear the segment
+                #  时延大概就是200ms的一个chunk, 因此当前chunk判断完，数据加入加一段里面正好。
             asr_segment += wave_chunk.tolist()
-            if asr_endpoint > 0  and len(asr_segment) >= 5*16000: # vad检测到endpoint
-                vad_model.reset_state()  # 需要重置，以便进行下一次的检测
-                # 只要一段音频结束，就输出切分之后的 wav，以便检查和分析
-                if output_path and save_cutted_wav:
-                    sf.write(os.path.join(
-                        output_path,
-                        f"{wav_name}_{asr_segment_num:05d}.wav"),
-                        np.array(asr_segment),
-                        samplerate=sample_rate)
-                asr_segment_num += 1
-                asr_segment = []  # clear the segment
-
             if start == wav_padded_len:
                 break
 
+        if len(asr_segment)>0 and output_path and save_cutted_wav:
+            sf.write(os.path.join(
+                output_path,
+                f"{wav_name}_{asr_segment_num:05d}.wav"),
+                np.array(asr_segment),
+                samplerate=24000)
         end_at = time()
         logger.info(f"{f_name} {end_at - start_at}s")
         total_time += (end_at - start_at)
@@ -113,7 +123,7 @@ if __name__ == "__main__":
     wav_list = sys.argv[1]
     output_path = sys.argv[2]
     use_gpu = int(sys.argv[3])
-    MAX_THREAD=32
+    MAX_THREAD=1
 
     f_wav = open(wav_list, 'r')
     file_list = []

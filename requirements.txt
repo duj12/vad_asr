@@ -3,6 +3,6 @@ loguru
 torch
 openvino
 librosa
-modelscope
-funasr
+modelscope==1.9.4
+funasr==0.7.0
 torchaudio

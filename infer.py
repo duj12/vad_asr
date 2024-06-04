@@ -14,7 +14,7 @@ def modelscope_infer(args):
             batch_size=args.batch_size,
             vad_model='damo/speech_fsmn_vad_zh-cn-16k-common-pytorch',
             vad_model_revision="v1.1.8",
-            punc_model='damo/punc_ct-transformer_zh-cn-common-vocab272727-pytorch',
+            punc_model='iic/punc_ct-transformer_cn-en-common-vocab471067-large',
             param_dict={"decoding_model": args.decoding_mode, "hotword": args.hotword_txt}
         )
     else:

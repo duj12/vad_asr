@@ -3,8 +3,11 @@
 stage=1
 input_wav_path=data/input/
 output_wav_path=data/output
+
+lang=$1
+
 use_punc=1    # 1 or 0， 是否添加标点
-gpu_decode=0  # 1 or 0， 是否使用GPU
+gpu_decode=1  # 1 or 0， 是否使用GPU
 
 wav_list_path=data/wav.list
 # step 1. put long wavs to data/input, cut them and output in data/output
@@ -24,8 +27,9 @@ if [ $stage -le 2 ]; then
   find `pwd`/$output_wav_path  -name "*.wav" | \
   awk -F"/" -v name="" '{name=$NF; gsub(".wav","",name); print name" "$0}' | \
   sort > $output_wav_path/wav.scp
-
-  bash ./infer.sh $output_wav_path $output_wav_path $use_punc $gpu_decode
+  line_count=$(wc -l < "$output_wav_path/wav.scp")
+  nj=$(( line_count < 4 ? line_count : 4 ))
+  bash ./infer.sh $output_wav_path $output_wav_path $use_punc $gpu_decode $nj $lang
   echo "ASR finished!!"
 fi
 
